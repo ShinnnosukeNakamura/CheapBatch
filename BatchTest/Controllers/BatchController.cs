@@ -10,13 +10,13 @@ namespace BatchTest.Controllers
     [ApiController]
     public class BatchController : ControllerBase
     {
-        private readonly string _waitTaskDirectory;
-        private readonly string _runningTaskDirectory;
+        private readonly string _taskDirectory;
+        private readonly string _inprogressTaskDirectory;
 
         public BatchController(IOptions<BatchTaskSettings> batchTaskSettings)
         {
-            _waitTaskDirectory = batchTaskSettings.Value.WaitTaskDirectory;
-            _runningTaskDirectory = batchTaskSettings.Value.RunningTaskDirectory;
+            _taskDirectory = batchTaskSettings.Value.TaskDirectory;
+            _inprogressTaskDirectory = batchTaskSettings.Value.InProgressDirectory;
         }
 
         [HttpPost]
@@ -26,7 +26,7 @@ namespace BatchTest.Controllers
             string fileName = $"{taskInfo.ScheduledStartTime:yyyyMMddHHmmss}_{taskInfo.GUID}_{taskInfo.Email}.json";
 
             // appsettings.jsonで指定したディレクトリにタスクファイルを保存
-            var taskFilePath = Path.Combine(_waitTaskDirectory, fileName);
+            var taskFilePath = Path.Combine(_taskDirectory, fileName);
             System.IO.File.WriteAllText(taskFilePath, JsonConvert.SerializeObject(taskInfo));
 
 
@@ -35,8 +35,8 @@ namespace BatchTest.Controllers
         [HttpPost("get-tasks")]
         public IActionResult GetTasks([FromBody] EmailRequest emailRequest)
         {
-            var pendingTasks = GetTasksByEmail(emailRequest.Email, _waitTaskDirectory);
-            var runningTasks = GetTasksByEmail(emailRequest.Email, _runningTaskDirectory);
+            var pendingTasks = GetTasksByEmail(emailRequest.Email, _taskDirectory);
+            var runningTasks = GetTasksByEmail(emailRequest.Email, _inprogressTaskDirectory);
 
             return Ok(new { PendingTasks = pendingTasks, RunningTasks = runningTasks });
         }

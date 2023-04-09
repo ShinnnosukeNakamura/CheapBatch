@@ -2,7 +2,9 @@
 {
     public class BatchTaskSettings
     {
-        public string WaitTaskDirectory { get; set; }
-        public string RunningTaskDirectory { get; set; }
+        public string TaskDirectory { get; set; }
+        public string InProgressDirectory { get; set; }
+        public string CompletedDirectory { get; set; }
+        public string FailedDirectory { get; set; }
     }
 }
