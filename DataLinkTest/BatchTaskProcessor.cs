@@ -1,4 +1,6 @@
-﻿using System;
+﻿using BatchTest.Model;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
@@ -84,7 +86,24 @@ namespace DataLinkTest
                 Console.WriteLine(i);
                 await Task.Delay(1000);
             }
-            
+            var taskInfo = JsonConvert.DeserializeObject<BatchTaskInfo>(File.ReadAllText(taskFile));
+
+            var results = new List<HttpResponseMessage>();
+
+            using (var httpClient = new HttpClient())
+            {
+                foreach (var postInfo in taskInfo.PostInfos)
+                {
+                    var content = new StringContent(JsonConvert.SerializeObject(postInfo.param), Encoding.UTF8, "application/json");
+                    var response = await httpClient.PostAsync(postInfo.Url, content);
+                    results.Add(response);
+                }
+            }
+
+            var success = results.All(response => response.IsSuccessStatusCode);
+            return success;
+
+
 
             // ③: タスクファイルを読み込み、各POSTリクエストに対してJSONペイロードを送信する実装
             // ④: リストの内容をCSVファイルに出力し、そのリンクをメールで送信する実装
