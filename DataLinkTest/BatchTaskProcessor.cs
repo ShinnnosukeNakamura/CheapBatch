@@ -79,6 +79,13 @@ namespace DataLinkTest
 
         private async Task<bool> ExecuteTaskAsync(string taskFile)
         {
+            for(int i = 0; i < 10; i++)
+            {
+                Console.WriteLine(i);
+                await Task.Delay(1000);
+            }
+            
+
             // ③: タスクファイルを読み込み、各POSTリクエストに対してJSONペイロードを送信する実装
             // ④: リストの内容をCSVファイルに出力し、そのリンクをメールで送信する実装
 
