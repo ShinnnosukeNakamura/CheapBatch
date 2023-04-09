@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,13 +16,13 @@ namespace DataLinkTest
         private readonly string _failedDirectory;
         private readonly SemaphoreSlim _semaphore;
 
-        public BatchTaskProcessor(string taskDirectory, string inProgressDirectory, string completedDirectory, string failedDirectory)
+        public BatchTaskProcessor(string taskDirectory, string inProgressDirectory, string completedDirectory, string failedDirectory, int maxConcurrentTasks)
         {
             _taskDirectory = taskDirectory;
             _inProgressDirectory = inProgressDirectory;
             _completedDirectory = completedDirectory;
             _failedDirectory = failedDirectory;
-            _semaphore = new SemaphoreSlim(50);
+            _semaphore = new SemaphoreSlim(maxConcurrentTasks, maxConcurrentTasks);
         }
 
         public async Task MonitorTasksAsync(CancellationToken cancellationToken)
@@ -29,38 +31,49 @@ namespace DataLinkTest
             {
                 var taskFiles = Directory.GetFiles(_taskDirectory, "*.json");
 
-                foreach (var taskFile in taskFiles)
+                // 実行対象のタスクファイルをフィルタリング
+                var now = DateTimeOffset.UtcNow;
+                taskFiles = taskFiles.Where(taskFile =>
                 {
-                    await _semaphore.WaitAsync();
+                    var fileName = Path.GetFileNameWithoutExtension(taskFile);
+                    var parts = fileName.Split('_');
+                    DateTimeOffset scheduledTime;
+                    return DateTimeOffset.TryParseExact(parts[0], "yyyyMMddHHmmss", null, System.Globalization.DateTimeStyles.None, out scheduledTime) && scheduledTime <= now;
+                }).ToArray();
 
-                    var task = Task.Run(async () =>
+                // 実行対象のタスクファイルをすべて実行中ディレクトリに移動
+                var inProgressFiles = taskFiles.Select(taskFile => MoveTaskFile(taskFile, _inProgressDirectory)).ToList();
+
+                // 実行対象のタスクをすべて並列実行
+                var tasks = inProgressFiles.Select(async inProgressFile =>
+                {
+                    try
                     {
-                        try
-                        {
-                            var inProgressFile = MoveTaskFile(taskFile, _inProgressDirectory);
-                            var taskResult = await ExecuteTaskAsync(inProgressFile);
+                        await _semaphore.WaitAsync();
+                        var taskResult = await ExecuteTaskAsync(inProgressFile);
 
-                            if (taskResult)
-                            {
-                                MoveTaskFile(inProgressFile, _completedDirectory);
-                            }
-                            else
-                            {
-                                MoveTaskFile(inProgressFile, _failedDirectory);
-                            }
-                        }
-                        catch (Exception ex)
+                        if (taskResult)
                         {
-                            Console.WriteLine($"Error executing task {Path.GetFileName(taskFile)}: {ex.Message}");
+                            MoveTaskFile(inProgressFile, _completedDirectory);
                         }
-                        finally
+                        else
                         {
-                            _semaphore.Release();
+                            MoveTaskFile(inProgressFile, _failedDirectory);
                         }
-                    });
-                }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error executing task {Path.GetFileName(inProgressFile)}: {ex.Message}");
+                    }
+                    finally
+                    {
+                        _semaphore.Release();
+                    }
+                });
 
-                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+                await Task.WhenAll(tasks);
+
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
             }
         }
 
