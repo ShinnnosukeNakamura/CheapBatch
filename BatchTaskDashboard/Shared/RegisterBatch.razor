@@ -1,0 +1,25 @@
+﻿@page "/registerbatch"
+@inject HttpClient Http
+
+<h3>バッチ登録</h3>
+
+<textarea @bind="_batchJson" placeholder="JSONを入力してください" rows="10" style="width:100%"></textarea>
+<button class="btn btn-primary" @onclick="RegisterBatchAsync">登録</button>
+
+
+@code {
+    private string _batchJson = "";
+
+    private async Task RegisterBatchAsync()
+    {
+        var response = await Http.PostAsJsonAsync("/api/batch/register", _batchJson);
+        if (response.IsSuccessStatusCode)
+        {
+            // 成功時の処理
+        }
+        else
+        {
+            // 失敗時の処理
+        }
+    }
+}

@@ -1,0 +1,85 @@
+﻿@page "/batchstatus"
+@using Newtonsoft.Json
+@using System.Text
+@inject HttpClient Http
+
+<h3>バッチ状況確認</h3>
+
+<label>メールアドレス:</label>
+<input @bind="EmailAddress" type="email" />
+<button @onclick="GetBatchStatus">状況確認</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th><input type="checkbox" @onclick="ToggleSelectAll" /></th>
+            <th>バッチ名</th>
+            <th>GUID</th>
+            <th>処理開始日時</th>
+            <th>POST先のURL</th>
+            <th>POSTする内容</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var batch in Batches)
+        {
+            <tr>
+                <td><input type="checkbox" @bind="batch.IsChecked" /></td>
+                <td>@batch.Name</td>
+                <td>@batch.Guid</td>
+                <td>@batch.StartDateTime</td>
+                <td>@batch.PostUrl</td>
+                <td>@batch.PostContent</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button @onclick="DeleteSelectedBatches">削除</button>
+
+@code {
+    private string EmailAddress { get; set; }
+    private List<Batch> Batches { get; set; } = new List<Batch>();
+
+    private async Task GetBatchStatus()
+    {
+        var content = new StringContent(JsonConvert.SerializeObject(new { EmailAddress }), Encoding.UTF8, "application/json");
+        var response = await Http.PostAsync("api/バッチ状況確認API", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Batches = await response.Content.ReadFromJsonAsync<List<Batch>>();
+        }
+        else
+        {
+            // エラー時の処理
+        }
+    }
+
+    private void ToggleSelectAll()
+    {
+        bool newValue = !Batches.All(x => x.IsChecked);
+        foreach (var batch in Batches)
+        {
+            batch.IsChecked = newValue;
+        }
+    }
+
+    private async Task DeleteSelectedBatches()
+    {
+        var selectedBatches = Batches.Where(x => x.IsChecked).ToList();
+        var guids = selectedBatches.Select(x => x.Guid).ToList();
+
+        var content = new StringContent(JsonConvert.SerializeObject(new { EmailAddress, Guids = guids }), Encoding.UTF8, "application/json");
+        var response = await Http.PostAsync("api/バッチ削除API", content);
+        if (response.IsSuccessStatusCode)
+        {
+            // 削除に成功した場合、リストから削除する
+            Batches.RemoveAll(x => x.IsChecked);
+        }
+        else
+        {
+            // エラー時の処理
+        }
+    }
+}
