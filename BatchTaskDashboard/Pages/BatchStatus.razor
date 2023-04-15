@@ -1,0 +1,53 @@
+﻿@page "/batchstatus"
+@using BatchTaskDashboard.Model
+@using BatchTest.Model
+@using Newtonsoft.Json
+@using System.Text
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory HttpClientFactory
+@using Radzen
+@using Radzen.Blazor
+
+<h3>バッチ状況確認</h3>
+
+<label>メールアドレス:</label>
+<input @bind="email" type="email" />
+@*<button @onclick="GetBatchStatus">状況確認</button>*@
+<RadzenButton Text="状況確認" Click="@GetBatchStatus" ButtonStyle="ButtonStyle.Primary" />
+    
+<RadzenDataGrid AllowFiltering="true" AllowPaging="true" AllowSorting="true" Data="@AllTasks" TItem="BatchTaskSummary" PageSize="10" FilterMode="FilterMode.Advanced">
+    <Columns>
+        <RadzenDataGridColumn TItem="BatchTaskSummary" Property="Status" Title="実行状況" />
+        <RadzenDataGridColumn TItem="BatchTaskSummary" Property="BatchTaskInfo.BatchName" Title="バッチ名" />
+        <RadzenDataGridColumn TItem="BatchTaskSummary" Property="BatchTaskInfo.ScheduledStartTime" Title="処理開始日時" />
+    </Columns>
+</RadzenDataGrid>
+
+@code {
+    private string email { get; set; }
+    private List<BatchTaskSummary> AllTasks { get; set; } = new List<BatchTaskSummary>();
+
+    private async Task GetBatchStatus()
+    {
+        var content = new StringContent(JsonConvert.SerializeObject(new { email }), Encoding.UTF8, "application/json");
+        HttpClient httpClient = HttpClientFactory.CreateClient();
+        var response = await httpClient.PostAsync("https://localhost:7182/api/Batch/get-tasks", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                NumberHandling = JsonNumberHandling.AllowReadingFromString
+            };
+            AllTasks = await response.Content.ReadFromJsonAsync<List<BatchTaskSummary>>(options);
+            // 追加: UIの再描画を強制する
+            StateHasChanged();
+        }
+        else
+        {
+            // エラー時の処理
+        }
+    }
+}

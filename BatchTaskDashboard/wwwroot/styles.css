@@ -1,0 +1,8 @@
+﻿:root {
+    --rz-primary-color: #1976d2; /* 基本色 */
+    --rz-secondary-color: #424242; /* 二次色 */
+    --rz-info-color: #2196f3; /* 情報色 */
+    --rz-success-color: #4caf50; /* 成功色 */
+    --rz-warning-color: #ff9800; /* 警告色 */
+    --rz-danger-color: #f44336; /* 危険色 */
+}

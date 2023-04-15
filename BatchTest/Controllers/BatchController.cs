@@ -1,4 +1,5 @@
-﻿using BatchTest.Model;
+﻿using BatchManagementAPI.Model;
+using BatchTest.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -35,24 +36,33 @@ namespace BatchTest.Controllers
         [HttpPost("get-tasks")]
         public IActionResult GetTasks([FromBody] EmailRequest emailRequest)
         {
-            var pendingTasks = GetTasksByEmail(emailRequest.Email, _taskDirectory);
-            var runningTasks = GetTasksByEmail(emailRequest.Email, _inprogressTaskDirectory);
+            var pendingTasks = GetTasksByEmail(emailRequest.Email, _taskDirectory, "pending");
+            var runningTasks = GetTasksByEmail(emailRequest.Email, _inprogressTaskDirectory, "running");
 
-            return Ok(new { PendingTasks = pendingTasks, RunningTasks = runningTasks });
+            var allTasks = new List<BatchTaskSummary>();
+            allTasks.AddRange(pendingTasks);
+            allTasks.AddRange(runningTasks);
+
+            return Ok(allTasks);
         }
 
-        private List<BatchTaskInfo> GetTasksByEmail(string email, string directory)
+        private List<BatchTaskSummary> GetTasksByEmail(string email, string directory, string status)
         {
             var taskFiles = Directory.GetFiles(directory, $"*_{email}.*");
-            var tasks = new List<BatchTaskInfo>();
+            var tasks = new List<BatchTaskSummary>();
 
             foreach (var taskFile in taskFiles)
             {
                 var taskInfo = JsonConvert.DeserializeObject<BatchTaskInfo>(System.IO.File.ReadAllText(taskFile));
-                tasks.Add(taskInfo);
+                tasks.Add(new BatchTaskSummary
+                {
+                    Status = status,
+                    BatchTaskInfo = taskInfo
+                });
             }
 
             return tasks;
         }
+
     }
 }
