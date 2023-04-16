@@ -6,5 +6,6 @@ namespace BatchTaskDashboard.Model
     {
         public string Status { get; set; }
         public BatchTaskInfo BatchTaskInfo { get; set; }
+        public bool Selected { get; set; }
     }
 }

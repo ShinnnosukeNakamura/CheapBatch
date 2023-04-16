@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using System.IO;
+using IOFile = System.IO.File; // エイリアスを追加
 
 namespace BatchTest.Controllers
 {
@@ -63,6 +65,40 @@ namespace BatchTest.Controllers
 
             return tasks;
         }
+
+        [HttpPost("DeleteTaskFile")]
+        public async Task<ActionResult<DeleteTaskFileResult>> DeleteTaskFileAsync([FromBody] DeleteTaskFileRequest request)
+        {
+            var result = new DeleteTaskFileResult();
+
+            try
+            {
+                string fileName = $"{request.ScheduledStartTime:yyyyMMddHHmmss}_{request.GUID}_{request.Email}.json";
+
+                string filePath = Path.Combine(_taskDirectory, fileName);
+
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                    result.Result = true;
+                    result.Message = "タスクファイルが正常に削除されました。";
+                }
+                else
+                {
+                    result.Result = false;
+                    result.Message = "タスクファイルが見つかりませんでした。";
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Result = false;
+                result.Message = $"タスクファイルの削除中にエラーが発生しました: {ex.Message}";
+            }
+
+            return Ok(result);
+        }
+
+
 
     }
 }

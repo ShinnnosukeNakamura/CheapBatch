@@ -34,7 +34,7 @@ namespace DataLinkTest
                 var taskFiles = Directory.GetFiles(_taskDirectory, "*.json");
 
                 // 実行対象のタスクファイルをフィルタリング
-                var now = DateTimeOffset.UtcNow;
+                var now = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(9));
                 taskFiles = taskFiles.Where(taskFile =>
                 {
                     var fileName = Path.GetFileNameWithoutExtension(taskFile);

@@ -4,7 +4,7 @@
     {
         public string BatchName { get; set; }
         public string GUID { get; set; }
-        public DateTime ScheduledStartTime { get; set; }
+        public DateTimeOffset ScheduledStartTime { get; set; }
         public string Email { get; set; }
         public List<PostInfo> PostInfos { get; set; }
     }

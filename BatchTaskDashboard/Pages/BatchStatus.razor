@@ -11,13 +11,26 @@
 
 <h3>バッチ状況確認</h3>
 
-<label>メールアドレス:</label>
-<input @bind="email" type="email" />
-@*<button @onclick="GetBatchStatus">状況確認</button>*@
-<RadzenButton Text="状況確認" Click="@GetBatchStatus" ButtonStyle="ButtonStyle.Primary" />
-    
+<div class="d-flex align-items-center">
+    <RadzenLabel Text="メールアドレス:" />
+    <RadzenTextBox @bind-Value="email" Placeholder="メールアドレスを入力" />
+    <RadzenButton Text="状況確認" Click="@GetBatchStatus" ButtonStyle="ButtonStyle.Primary" />
+</div>
+
+<RadzenButton Text="タスク削除" Click="@DeleteSelectedTasks" ButtonStyle="ButtonStyle.Danger" />
+
 <RadzenDataGrid AllowFiltering="true" AllowPaging="true" AllowSorting="true" Data="@AllTasks" TItem="BatchTaskSummary" PageSize="10" FilterMode="FilterMode.Advanced">
     <Columns>
+        <RadzenDataGridColumn TItem="BatchTaskSummary" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="60px">
+            <Template Context="task">
+                @{
+                    if (task.Status != "running")
+                    {
+                        <RadzenCheckBox @bind-Value="task.Selected" />
+                    }
+                }
+            </Template>
+        </RadzenDataGridColumn>
         <RadzenDataGridColumn TItem="BatchTaskSummary" Property="Status" Title="実行状況" />
         <RadzenDataGridColumn TItem="BatchTaskSummary" Property="BatchTaskInfo.BatchName" Title="バッチ名" />
         <RadzenDataGridColumn TItem="BatchTaskSummary" Property="BatchTaskInfo.ScheduledStartTime" Title="処理開始日時" />
@@ -28,7 +41,7 @@
     private string email { get; set; }
     private List<BatchTaskSummary> AllTasks { get; set; } = new List<BatchTaskSummary>();
 
-    private async Task GetBatchStatus()
+   private async Task GetBatchStatus()
     {
         var content = new StringContent(JsonConvert.SerializeObject(new { email }), Encoding.UTF8, "application/json");
         HttpClient httpClient = HttpClientFactory.CreateClient();
@@ -50,4 +63,25 @@
             // エラー時の処理
         }
     }
+private async Task DeleteSelectedTasks()
+{
+    var selectedTasks = AllTasks.Where(t => t.Selected).ToList();
+
+    foreach (var task in selectedTasks)
+    {
+        DateTimeOffset utcStartTime = task.BatchTaskInfo.ScheduledStartTime.ToUniversalTime();
+        
+        var content = new StringContent(JsonConvert.SerializeObject(new { ScheduledStartTime = utcStartTime, task.BatchTaskInfo.GUID, task.BatchTaskInfo.Email }), Encoding.UTF8, "application/json");
+        HttpClient httpClient = HttpClientFactory.CreateClient();
+        var response = await httpClient.PostAsync("https://localhost:7182/api/Batch/DeleteTaskFile", content);
+
+        if (response.IsSuccessStatusCode)
+        {
+            AllTasks.Remove(task);
+        }
+    }
+
+    // 追加: UIの再描画を強制する
+    StateHasChanged();
+}
 }
