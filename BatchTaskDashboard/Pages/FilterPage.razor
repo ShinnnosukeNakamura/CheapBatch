@@ -1,0 +1,209 @@
+﻿@page "/filterpage"
+@using BatchTaskDashboard.Model
+@using BatchTest.Model
+@using Newtonsoft.Json
+@using System.Text
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject IHttpClientFactory HttpClientFactory
+@using Radzen
+@using Radzen.Blazor
+@using System.Collections.ObjectModel
+
+<div class="container"  style="height: 85vh; overflow: hidden;">
+    <div class="row">
+        <div class="col-md-3">
+
+            <div style="overflow-y: scroll; height: 80vh;">
+                <div style="width: 100%;">
+
+                    <h5>From</h5>
+                    <RadzenDatePicker @bind-Value="@fromDate" TValue="DateTime?" Change="@OnDateRangeChanged" Style="width:100%;"/>
+                    <h5>To</h5>
+                    <RadzenDatePicker @bind-Value="@toDate" TValue="DateTime?" Change="@OnDateRangeChanged" Style="width:100%;"/>
+                    <h5>Filter1List</h5>
+                    <RadzenListBox @ref="Filter1List" TValue="FilterParam" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter1Items" TextProperty="Filter1" ValueProperty="Filter1" Change="@OnFilter1ListChanged" Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;"/>
+
+                    <h5>Filter2List</h5>
+                    <RadzenListBox @ref="Filter2List" TValue="FilterParam" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter2Items" TextProperty="Filter2" ValueProperty="Filter2" Change="@OnFilter2ListChanged"  Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;"/>
+
+                    <h5>ItemnameList (Distinct)</h5>
+                    <RadzenListBox @ref="ItemnameDistinctList" TValue="FilterParam" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@itemnameDistinctItems" TextProperty="Itemname" ValueProperty="Itemname" Change="@OnItemnameDistinctListChanged" Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;" />
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9" style="overflow: hidden;">
+            <div style="height: 40vh; overflow-y: scroll;">
+                <h5>ItemnameList</h5>
+                <RadzenButton Text="Add All Items" Click="@AddAllItems" />
+                <RadzenDataGrid @ref="ItemnameDataGrid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@itemnameItems" TItem="FilterParam" AutoGenerateColumns="false" FilteredDataChanged="@((IEnumerable<FilterParam> filteredData) => OnFilteredDataChanged(filteredData))" Style="height: 30vh; overflow-y: auto;">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="FilterParam" Context="item" Width="100px" Filterable="false">
+                            <Template Context="item">
+                                <RadzenButton Text="Select" Size="ButtonSize.Small" Click="@( () => OnItemnameListChanged(item) )" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="FilterParam" Property="Filter1" Title="Filter1" />
+                        <RadzenDataGridColumn TItem="FilterParam" Property="Filter2" Title="Filter2" />
+                        <RadzenDataGridColumn TItem="FilterParam" Property="Itemname" Title="Itemname" />
+                    </Columns>
+                </RadzenDataGrid>
+            </div>
+            <div style="height: 40vh; overflow-y: scroll;">
+                <h5>SelectedItemnameList</h5>
+                <RadzenButton Text="Remove All Items" ButtonStyle="ButtonStyle.Danger" Click="@RemoveAllSelectedItems" />
+                <RadzenDataGrid @ref="SelectedItemnameDataGrid" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@selectedItemnameItems" TItem="FilterParam"  Style="height: 30vh; overflow-y: auto;">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="FilterParam" Context="item" Width="100px" Filterable="false">
+                            <Template Context="item">
+                                <RadzenButton Text="Remove" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Danger" Click="@( () => RemoveSelectedItem(item) )" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="FilterParam" Property="Filter1" Title="Filter1" />
+                        <RadzenDataGridColumn TItem="FilterParam" Property="Filter2" Title="Filter2" />
+                        <RadzenDataGridColumn TItem="FilterParam" Property="Itemname" Title="Itemname" />
+                    </Columns>
+                </RadzenDataGrid>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+@code {
+
+    private DateTime? fromDate;
+    private DateTime? toDate;
+
+    private RadzenListBox<FilterParam> Filter1List;
+    private RadzenListBox<FilterParam> Filter2List;
+    //private RadzenListBox<FilterParam> ItemnameList;
+    //private RadzenListBox<FilterParam> SelectedItemnameList;
+    private RadzenDataGrid<FilterParam> ItemnameDataGrid;
+    private RadzenDataGrid<FilterParam> SelectedItemnameDataGrid;
+
+
+    private RadzenListBox<FilterParam> ItemnameDistinctList;
+    private IEnumerable<FilterParam> itemnameDistinctItems;
+
+    private List<FilterParam> filterParams = new List<FilterParam>
+    {
+        new FilterParam { Filter1 = "Filter1-A", Filter2 = "Filter2-A", Itemname = "Itemname-1" },
+        new FilterParam { Filter1 = "Filter1-A", Filter2 = "Filter2-B", Itemname = "Itemname-2" },
+        new FilterParam { Filter1 = "Filter1-A", Filter2 = "Filter2-C", Itemname = "Itemname-3" },
+        new FilterParam { Filter1 = "Filter1-B", Filter2 = "Filter2-A", Itemname = "Itemname-4" },
+        new FilterParam { Filter1 = "Filter1-B", Filter2 = "Filter2-B", Itemname = "Itemname-5" },
+        new FilterParam { Filter1 = "Filter1-B", Filter2 = "Filter2-C", Itemname = "Itemname-6" },
+        new FilterParam { Filter1 = "Filter1-C", Filter2 = "Filter2-A", Itemname = "Itemname-7" },
+        new FilterParam { Filter1 = "Filter1-C", Filter2 = "Filter2-B", Itemname = "Itemname-8" },
+        new FilterParam { Filter1 = "Filter1-C", Filter2 = "Filter2-C", Itemname = "Itemname-9" }
+    };
+
+
+    private IEnumerable<FilterParam> filter1Items;
+    private IEnumerable<FilterParam> filter2Items;
+    private IEnumerable<FilterParam> itemnameItems;
+    private List<FilterParam> selectedItemnameItems = new List<FilterParam>();
+     private List<FilterParam> filteredItemnameItems = new List<FilterParam>();
+
+    //private ObservableCollection<FilterParam> selectedItemnameItems = new ObservableCollection<FilterParam>();
+
+    private void OnDateRangeChanged(DateTime? date)
+    {
+        // FilterParam リストを日時範囲でフィルタリングする処理を実装
+        // Filter1List, Filter2List, ItemnameList のデータを更新
+    }
+
+
+    protected override void OnInitialized()
+    {
+        filter1Items = filterParams.GroupBy(x => x.Filter1).Select(g => g.First());
+        filter2Items = filterParams.GroupBy(x => x.Filter2).Select(g => g.First());
+        itemnameItems = filterParams.GroupBy(x => x.Itemname).Select(g => g.First());
+        itemnameDistinctItems = filterParams.GroupBy(x => x.Itemname).Select(g => g.First());
+
+    }
+
+    private void OnFilter1ListChanged(object value)
+    {
+        if (value != null)
+        {
+            string selectedFilter1 = value.ToString();
+            itemnameItems = filterParams.Where(x => x.Filter1 == selectedFilter1).GroupBy(x => x.Itemname).Select(g => g.First());
+            StateHasChanged();
+        }
+    }
+
+    private void OnFilter2ListChanged(object value)
+    {
+        if (value != null)
+        {
+            string selectedFilter2 = value.ToString();
+            itemnameItems = filterParams.Where(x => x.Filter2 == selectedFilter2).GroupBy(x => x.Itemname).Select(g => g.First());
+            StateHasChanged();
+        }
+    }
+
+    private void OnItemnameDistinctListChanged(object value)
+    {
+        if (value != null)
+        {
+            string selectedItemname = value.ToString();
+            itemnameItems = filterParams.Where(x => x.Itemname == selectedItemname).GroupBy(x => x.Itemname).Select(g => g.First());
+            StateHasChanged();
+        }
+    }
+    private void UpdateItemnameItems()
+    {
+        itemnameItems = filterParams.GroupBy(x => x.Itemname).Select(g => g.First());
+        StateHasChanged();
+    }
+
+    private void OnItemnameListChanged(FilterParam selectedItem)
+    {
+        if (selectedItem != null)
+        {
+            selectedItemnameItems.Add(selectedItem);
+            SelectedItemnameDataGrid.Reload();
+        }
+    }
+
+        private void OnFilteredDataChanged(IEnumerable<FilterParam> filteredData)
+    {
+        filteredItemnameItems = filteredData.ToList();
+    }
+
+    private void AddAllItems()
+    {
+        var visibleItems = ItemnameDataGrid.View.Cast<FilterParam>().ToList();
+
+        foreach (var item in visibleItems)
+        {
+            if (!selectedItemnameItems.Any(x => x.Itemname == item.Itemname))
+            {
+                selectedItemnameItems.Add(item);
+            }
+        }
+        SelectedItemnameDataGrid.Reload();
+        StateHasChanged();
+    }
+    private void RemoveSelectedItem(FilterParam selectedItem)
+    {
+        if (selectedItem != null)
+        {
+            selectedItemnameItems.Remove(selectedItem);
+            SelectedItemnameDataGrid.Reload();
+        }
+    }
+    private void RemoveAllSelectedItems()
+    {
+        selectedItemnameItems.Clear();
+        SelectedItemnameDataGrid.Reload();
+    }
+
+    
+}
