@@ -10,25 +10,21 @@
 @using Radzen.Blazor
 @using System.Collections.ObjectModel
 
-<div class="container"  style="height: 85vh; overflow: hidden;">
-    <div class="row">
-        <div class="col-md-3">
 
-            <div style="overflow-y: scroll; height: 80vh;">
+    <div class="row  mx-0">
+        <div class="col-md-3 mx-0">
+
+            <div style=" height: 80vh;">
                 <div style="width: 100%;">
-
-                    <h5>From</h5>
-                    <RadzenDatePicker @bind-Value="@fromDate" TValue="DateTime?" Change="@OnDateRangeChanged" Style="width:100%;"/>
-                    <h5>To</h5>
-                    <RadzenDatePicker @bind-Value="@toDate" TValue="DateTime?" Change="@OnDateRangeChanged" Style="width:100%;"/>
                     <h5>Filter1List</h5>
-                    <RadzenListBox @ref="Filter1List" TValue="FilterParam" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter1Items" TextProperty="Filter1" ValueProperty="Filter1" Change="@OnFilter1ListChanged" Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;"/>
+                    <RadzenListBox @ref="Filter1List" TValue="FilterParam" AllowFiltering="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter1Items" TextProperty="Filter1" ValueProperty="Filter1" Change="@OnFilter1ListChanged" Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;"/>
+
 
                     <h5>Filter2List</h5>
-                    <RadzenListBox @ref="Filter2List" TValue="FilterParam" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter2Items" TextProperty="Filter2" ValueProperty="Filter2" Change="@OnFilter2ListChanged"  Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;"/>
+                    <RadzenListBox @ref="Filter2List" TValue="FilterParam" AllowFiltering="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@filter2Items" TextProperty="Filter2" ValueProperty="Filter2" Change="@OnFilter2ListChanged"  Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;"/>
 
                     <h5>ItemnameList (Distinct)</h5>
-                    <RadzenListBox @ref="ItemnameDistinctList" TValue="FilterParam" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@itemnameDistinctItems" TextProperty="Itemname" ValueProperty="Itemname" Change="@OnItemnameDistinctListChanged" Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;" />
+                    <RadzenListBox @ref="ItemnameDistinctList" TValue="FilterParam" AllowFiltering="false" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" Multiple="false" Data="@itemnameDistinctItems" TextProperty="Itemname" ValueProperty="Itemname" Change="@OnItemnameDistinctListChanged" Style="width:100%; height: 20vh; overflow-y: auto; margin-bottom:10px;" />
                 </div>
             </div>
         </div>
@@ -36,7 +32,7 @@
             <div style="height: 40vh; overflow-y: scroll;">
                 <h5>ItemnameList</h5>
                 <RadzenButton Text="Add All Items" Click="@AddAllItems" />
-                <RadzenDataGrid @ref="ItemnameDataGrid" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@itemnameItems" TItem="FilterParam" AutoGenerateColumns="false" FilteredDataChanged="@((IEnumerable<FilterParam> filteredData) => OnFilteredDataChanged(filteredData))" Style="height: 30vh; overflow-y: auto;">
+                <RadzenDataGrid @ref="ItemnameDataGrid" class="radzen-datagrid-compact"AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@itemnameItems" TItem="FilterParam" AutoGenerateColumns="false" FilteredDataChanged="@((IEnumerable<FilterParam> filteredData) => OnFilteredDataChanged(filteredData))" Style="height: 30vh; overflow-y: auto;">
                     <Columns>
                         <RadzenDataGridColumn TItem="FilterParam" Context="item" Width="100px" Filterable="false">
                             <Template Context="item">
@@ -67,8 +63,6 @@
             </div>
         </div>
     </div>
-</div>
-
 
 
 
@@ -92,9 +86,9 @@
 
     private List<FilterParam> filterParams = new List<FilterParam>
     {
-        new FilterParam { Filter1 = "Filter1-A", Filter2 = "Filter2-A", Itemname = "Itemname-1" },
-        new FilterParam { Filter1 = "Filter1-A", Filter2 = "Filter2-B", Itemname = "Itemname-2" },
-        new FilterParam { Filter1 = "Filter1-A", Filter2 = "Filter2-C", Itemname = "Itemname-3" },
+        new FilterParam { Filter1 = "Filter1-A1", Filter2 = "Filter2-A", Itemname = "Itemname-1" },
+        new FilterParam { Filter1 = "Filter1-A2", Filter2 = "Filter2-B", Itemname = "Itemname-2" },
+        new FilterParam { Filter1 = "Filter1-A3", Filter2 = "Filter2-C", Itemname = "Itemname-3" },
         new FilterParam { Filter1 = "Filter1-B", Filter2 = "Filter2-A", Itemname = "Itemname-4" },
         new FilterParam { Filter1 = "Filter1-B", Filter2 = "Filter2-B", Itemname = "Itemname-5" },
         new FilterParam { Filter1 = "Filter1-B", Filter2 = "Filter2-C", Itemname = "Itemname-6" },
@@ -103,7 +97,10 @@
         new FilterParam { Filter1 = "Filter1-C", Filter2 = "Filter2-C", Itemname = "Itemname-9" }
     };
 
-
+        private void OnFilterChanged()
+    {
+        // Filter has changed, you can perform any action needed here.
+    }
     private IEnumerable<FilterParam> filter1Items;
     private IEnumerable<FilterParam> filter2Items;
     private IEnumerable<FilterParam> itemnameItems;
@@ -111,6 +108,8 @@
      private List<FilterParam> filteredItemnameItems = new List<FilterParam>();
 
     //private ObservableCollection<FilterParam> selectedItemnameItems = new ObservableCollection<FilterParam>();
+
+
 
     private void OnDateRangeChanged(DateTime? date)
     {

@@ -1,0 +1,6 @@
+﻿/* コンパクトなRadzenDataGridのスタイル */
+.radzen-datagrid-compact .rz-datagrid-row,
+.radzen-datagrid-compact .rz-datagrid-headercell {
+    padding-top: 4px;
+    padding-bottom: 4px;
+}
