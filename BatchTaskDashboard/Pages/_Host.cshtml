@@ -7,3 +7,46 @@
 
 <component type="typeof(App)" render-mode="ServerPrerendered" />
 <link href="css/custom-datagrid-compact.css" rel="stylesheet" />
+<script>
+window.shiftSelect = function (element) {
+    let lastSelectedIndex = -1;
+    let currentIndex = -1;
+
+    element.addEventListener('click', function (event) {
+        if (event.shiftKey && lastSelectedIndex > -1) {
+            let start = Math.min(lastSelectedIndex, currentIndex);
+            let end = Math.max(lastSelectedIndex, currentIndex);
+
+            for (let i = start; i <= end; i++) {
+                element.options[i].selected = true;
+            }
+        }
+        lastSelectedIndex = currentIndex;
+    });
+
+    element.addEventListener('change', function (event) {
+        for (let i = 0; i < element.options.length; i++) {
+            if (element.options[i].selected) {
+                currentIndex = i;
+                break;
+            }
+        }
+    });
+}
+window.getSelectedItems = function (element) {
+    let selectedItems = [];
+    for (let i = 0; i < element.options.length; i++) {
+        if (element.options[i].selected) {
+            selectedItems.push(element.options[i].value);
+        }
+    }
+    return selectedItems;
+}
+window.getSelectedOptions = function (selectElement) {
+    const selectedOptions = Array.from(selectElement.options)
+        .filter(option => option.selected)
+        .map(option => option.value);
+    return selectedOptions;
+};
+
+</script>
