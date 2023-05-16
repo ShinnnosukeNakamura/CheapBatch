@@ -43,7 +43,8 @@
             <div style="height: 40vh; overflow-y: scroll;">
                 <h5>ItemnameList</h5>
                 <RadzenButton Text="Add All Items" Click="@AddAllItems" />
-                <RadzenDataGrid @ref="ItemnameDataGrid" class="radzen-datagrid-compact"AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@itemnameItems" TItem="FilterParam" AutoGenerateColumns="false" FilteredDataChanged="@((IEnumerable<FilterParam> filteredData) => OnFilteredDataChanged(filteredData))" Style="height: 30vh; overflow-y: auto;">
+                @*<RadzenDataGrid @ref="ItemnameDataGrid" class="radzen-datagrid-compact"AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@itemnameItems" TItem="FilterParam" AutoGenerateColumns="false" FilteredDataChanged="@((IEnumerable<FilterParam> filteredData) => OnFilteredDataChanged(filteredData))" Style="height: 30vh; overflow-y: auto;">*@
+                    <RadzenDataGrid @ref="ItemnameDataGrid" class="radzen-datagrid-compact" AllowFiltering="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive" AllowPaging="true" PageSize="10" AllowSorting="true" Data="@GetFilteredItemnameItems()" TItem="FilterParam" AutoGenerateColumns="false" FilteredDataChanged="@((IEnumerable<FilterParam> filteredData) => OnFilteredDataChanged(filteredData))" Style="height: 30vh; overflow-y: auto;">
                     <Columns>
                         <RadzenDataGridColumn TItem="FilterParam" Context="item" Width="100px" Filterable="false">
                             <Template Context="item">
@@ -82,6 +83,9 @@
 
 @code {
 
+
+    //行間詰めたリストボックス用
+    private IEnumerable<FilterParam> itemnameItems;
     private ElementReference selectElement;
     private Dictionary<string, string> items = new Dictionary<string, string>();
 
@@ -90,7 +94,7 @@
     private async Task OnSelectChanged(ChangeEventArgs e)
     {
         var selectedOptions = await JSRuntime.InvokeAsync<List<string>>("getSelectedOptions", selectElement);
-    
+
         foreach (var key in selectedOptions)
         {
             var itemToAdd = items[key];
@@ -99,7 +103,8 @@
                 selectedItems.Add(itemToAdd);
             }
         }
-    
+
+        FilterItemnameList(); // この行を追加
         StateHasChanged();
     }
     private void RemoveSelectedItem(string item)
@@ -107,11 +112,41 @@
         if (item != null)
         {
             selectedItems.Remove(item);
+            FilterItemnameList(); // この行を追加
             StateHasChanged();
         }
     }
+    private void RemoveAllSelectedItems()
+    {
+        selectedItems.Clear();
+        FilterItemnameList();
+        StateHasChanged(); // これを追加
+    }
 
 
+    //リストボックスに追加された内容でItemnameListをフィルタリング
+    private void FilterItemnameList()
+    {
+        itemnameItems = GetFilteredItemnameItems(); // この行を変更
+        ItemnameDataGrid.Reload(); // ItemnameDataGrid をリロード
+        StateHasChanged();
+    }
+    private IEnumerable<FilterParam> GetFilteredItemnameItems()
+    {
+        if (selectedItems.Count == 0) // selectedItems が空の場合
+        {
+            return filterParams
+                .GroupBy(x => x.Filter1)
+                .Select(g => g.First());
+        }
+        else
+        {
+            return filterParams
+                .Where(x => selectedItems.Contains(x.Filter1)) // selectedItems を使ってフィルタリング
+                .GroupBy(x => x.Filter1)
+                .Select(g => g.First());
+        }
+    }
 
 
 
@@ -148,7 +183,7 @@
     }
     private IEnumerable<FilterParam> filter1Items;
     private IEnumerable<FilterParam> filter2Items;
-    private IEnumerable<FilterParam> itemnameItems;
+
     private List<FilterParam> selectedItemnameItems = new List<FilterParam>();
      private List<FilterParam> filteredItemnameItems = new List<FilterParam>();
 
@@ -249,11 +284,6 @@
             selectedItemnameItems.Remove(selectedItem);
             SelectedItemnameDataGrid.Reload();
         }
-    }
-    private void RemoveAllSelectedItems()
-    {
-        selectedItemnameItems.Clear();
-        SelectedItemnameDataGrid.Reload();
     }
 
     
